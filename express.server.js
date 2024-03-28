@@ -18,7 +18,9 @@ const oauth2Client = new google.auth.OAuth2(
   );
   console.log('redirectr:', process.env.REDIRECT_URL);
   
-  // Access scopes for read-only Drive activity.
+app.get('/login-by-google', (req, res, next) => {
+    const randomState = Math.random().toString(36).substring(7);
+      // Access scopes for read-only Drive activity.
   const scopes = [
     'https://www.googleapis.com/auth/userinfo.email'
   ];
@@ -31,13 +33,9 @@ const oauth2Client = new google.auth.OAuth2(
       * Alternatively, if only one scope is needed, you can pass a scope URL as a string */
     scope: scopes,
     // Enable incremental authorization. Recommended as a best practice.
-    include_granted_scopes: true
+    include_granted_scopes: true,
+    state: randomState
   });
-  
-  console.log('AUTH URL:', authorizationUrl);
-
-app.get('/login-by-google', (req, res, next) => {
-    const randomState = Math.random().toString(36).substring(7);
     console.log('randomState:', randomState);
     req.session.protect = randomState;
     res.redirect(authorizationUrl)
@@ -47,6 +45,7 @@ app.get('/oauth2callback', async (req, res, next) => {
     let q = url.parse(req.url, true).query;
     const query = req.query
     console.log('query:', query);
+    console.log('callback state: ', query.state);
     console.log('Session: ', req.session.protect);
     if (query.error){
         console.log('Error:' + query.error);
@@ -54,6 +53,7 @@ app.get('/oauth2callback', async (req, res, next) => {
     }
     let { tokens } = await oauth2Client.getToken(q.code);
     console.log('token:::', tokens);
+    console.log('session state:::', req.session.protect);
     res.status(200).json({tokens})
 })
 
